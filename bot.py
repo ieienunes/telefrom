@@ -15,6 +15,7 @@ from telethon import TelegramClient, events
 from decouple import config
 import logging
 from telethon.sessions import StringSession
+from bs4 import BeautifulSoup
 
 logging.basicConfig(format='[%(levelname) 5s/%(asctime)s] %(name)s: %(message)s', level=logging.WARNING)
 
@@ -39,20 +40,17 @@ except Exception as ap:
 
 @BotzHubUser.on(events.NewMessage(incoming=True, chats=FROM))
 async def sender_bH(event):
+    # Remove as tags HTML da mensagem
+    soup = BeautifulSoup(event.message.message, 'html.parser')
+    message = soup.get_text()
+    
+    # Encaminha a mensagem para os canais especificados em TO
     for i in TO:
         try:
-            message = await event.get_reply_message()
-            input_msg = await BotzHubUser.input(f"Digite a mensagem para enviar para {i}:")
-            msg = input_msg.stringify().replace('message=', '')
-            
-            # Remover links da mensagem
-            msg = re.sub(r'http\S+', '', msg, flags=re.MULTILINE)
-            
-            if message:
-                msg = msg + f"\n\n{message.sender.first_name}: {message.text}"
-            edited = await BotzHubUser.input(f"Editar mensagem para {i}: {msg}")
-            edited = edited.stringify().replace('message=', '')
-            await BotzHubUser.send_message(i, edited)
+            await BotzHubUser.send_message(
+                i,
+                message
+            )
         except Exception as e:
             print(e)
 
